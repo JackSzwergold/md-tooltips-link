@@ -1,6 +1,6 @@
 import markdown
-from mdtooltips import MdTooltip
+from mdtooltipslink import MdTooltipLink
 
 txt = "@(parachain) test @(lol)"
-res = markdown.markdown(txt, extensions=[MdTooltip()])
+res = markdown.markdown(txt, extensions=[MdTooltipLink()])
 print(res)

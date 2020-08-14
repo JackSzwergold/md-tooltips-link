@@ -1,20 +1,27 @@
-# md-tooltips
+# md-tooltips-link
 
-A simple Python markdown extension which will give you tooltips of definitions from a glossary. Works with `mkdocs` with `mkdocs-material`.
+A simple Python markdown extension which will give you tooltips and links to definitions from a glossary. Works with `mkdocs` with `mkdocs-material`. This is extensively based on the [`md-tooltips`](https://github.com/lsaether/md-tooltips) extension by Logan Saether, but add in the following:
+
+ * the ability to have the hover-over text link to the glossary
+ * the ability to pass a glossary file with any path/name rather than just `docs/glossary.md`
+ * automatically create a default CSS file
+ * allow the user to supply a custom CSS file
+
+These tooltips just use CSS without any Javascript.
 
 ## How to use
 
 Install from `pip`
 
 ```bash
-$ pip install md-tooltips
+$ pip install md-tooltips-link
 ```
 
 Add to your `mkdocs.yml` under the `markdown_extensions` field.
 
 ```yaml
 markdown_extensions:
-     - mdtooltips
+  - mdtooltipslink
 ```
 
 Create a file named `glossary.md` in the top level of the `docs` directory.
@@ -41,87 +48,49 @@ In any of your markdown files in the `docs` directory, use the `@()` syntax to c
 An important term you should be familiar with is @(block).
 ```
 
-Add css.
+### Customisation
 
-```css
-/* Tool-tips */
-*,
-*:before,
-*:after {
-	-webkit-box-sizing: border-box;
-	-moz-box-sizing:    border-box;
-	box-sizing:         border-box;
-}
+The following customisations are available:
 
-/* Add this attribute to the element that needs a tooltip */
-[data-tooltip] {
-	position: relative;
-	/* z-index: 2; */
-	cursor: pointer;
-	text-decoration: underline dotted;
-}
-
-/* Hide the tooltip content by default */
-[data-tooltip]:before,
-[data-tooltip]:after {
-  visibility: hidden;
-	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
-	filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);
-	opacity: 0;
-	pointer-events: none;
-}
-
-/* Position tooltip above the element */
-[data-tooltip]:before {
-	position: absolute;
-  z-index: 2;
-	top: 115%;
-	left: 50%;
-	margin-bottom: 5px;
-	margin-left: -80px;
-	padding: 7px;
-	width: 160px;
-	-webkit-border-radius: 3px;
-	-moz-border-radius:    3px;
-	border-radius:         3px;
-	background-color: #000;
-	background-color: hsla(0, 0%, 20%, 0.9);
-	color: #fff;
-	content: attr(data-tooltip);
-	text-align: center;
-	font-size: 14px;
-	line-height: 1.2;
-}
-
-/* Triangle hack to make tooltip look like a speech bubble */
-[data-tooltip]:after {
-	position: absolute;
-  z-index: 2;  
-	top: 115%;
-	left: 50%;
-	margin-left: -5px;
-	margin-top: -5px;
-	width: 0;
-	border-bottom: 5px solid #000;
-	border-bottom: 5px solid hsla(0, 0%, 20%, 0.9);
-	border-right: 5px solid transparent;
-	border-left: 5px solid transparent;
-	content: " ";
-	font-size: 0;
-	line-height: 0;
-}
-
-/* Show tooltip content on hover */
-[data-tooltip]:hover:before,
-[data-tooltip]:hover:after {
-	visibility: visible;
-	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
-	filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100);
-	opacity: 1;
-}
+```yaml
+markdown_extensions:
+  - mdtooltipslink:
+      glossary_path: filepath
 ```
 
-It should work! If it does not please open an issue, as I hacked this together in a few hours for a project I work on and did not do any testing on other environments.
+`filepath` is the path to your glossary file. This defaults to `docs/glossary.md`.
+
+```yaml
+markdown_extensions:
+  - mdtooltipslink:
+      link: true
+```
+
+`link` allows you to set whether or not the tooltip hover text provides a link to the item in the glossary or not. This defaults to `True`.
+
+```yaml
+markdown_extensions:
+  - mdtooltipslink:
+      header: true
+```
+
+`header` allows you to set whether or not the tooltip text box has a "header" containing the tooltip text. This defaults to `True`.
+
+```yaml
+markdown_extensions:
+  - mdtooltipslink:
+      css_path: cssfilepath
+```
+
+`cssfilepath` sets where the default CSS file will be output to. This defaults to `docs/css/tooltips.css`.
+
+```yaml
+markdown_extensions:
+  - mdtooltipslink:
+      css_custom: csscustomfilepath
+```
+
+`csscustomfilepath` allows you to pass your own CSS file, which will be copied to the location given by the `css_path` option. This defaults to `None`.
 
 ## License
 

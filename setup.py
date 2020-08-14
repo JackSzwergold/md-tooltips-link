@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(
-    name='md-tooltips',
-    version='1.3.1',
-    py_modules=['mdtooltips'],
+    name='md-tooltips-link',
+    version='0.1',
+    py_modules=['mdtooltipslink'],
     install_requires = ['markdown>=2.5'],
 )

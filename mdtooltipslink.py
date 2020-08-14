@@ -111,7 +111,7 @@ class DefinitionPattern(Pattern):
         return elem
 
 
-class MdTooltip(Extension):
+class MdTooltipLink(Extension):
     def __init__(self, **kwargs):
         # configuration defaults
         self.config = {
@@ -149,4 +149,4 @@ class MdTooltip(Extension):
 
 
 def makeExtension(**kwargs):
-    return MdTooltip(**kwargs)
+    return MdTooltipLink(**kwargs)
