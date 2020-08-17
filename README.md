@@ -1,6 +1,6 @@
 # md-tooltips-link
 
-A simple Python markdown extension which will give you tooltips and links to definitions from a glossary. Works with `mkdocs` with `mkdocs-material`. This is extensively based on the [`md-tooltips`](https://github.com/lsaether/md-tooltips) extension by Logan Saether, but add in the following:
+A simple Python markdown extension which will give you tooltips *and* links to definitions from a glossary. Works with `mkdocs` with `mkdocs-material`. This is extensively based on the [`md-tooltips`](https://github.com/lsaether/md-tooltips) extension by Logan Saether, but adds in the following:
 
  * the ability to have the hover-over text link to the glossary
  * the ability to pass a glossary file with any path/name rather than just `docs/glossary.md`
@@ -8,6 +8,8 @@ A simple Python markdown extension which will give you tooltips and links to def
  * allow the user to supply a custom CSS file
 
 These tooltips just use CSS without any Javascript.
+
+> Note: I should probably switch this over to using something like the Javascript [tippy](https://atomiks.github.io/tippyjs/) package. That would offer better control of the tooltip and allow full HTML within the tooltip. This will happen if/when I have the time...
 
 ## How to use
 
