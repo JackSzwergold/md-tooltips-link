@@ -34,7 +34,7 @@ DEFAULT_CSS = """
   color: #666666;
   background-color: #F7F7F7; 
   border: 1px solid #F5F5F5;
-  border-left: 3px solid rgb(43, 155, 70);
+  border-left: 3px solid #4c50b4;
   padding: 0.5em 0.8em 0.8em 0.8em;
 }
 
@@ -42,7 +42,7 @@ DEFAULT_CSS = """
   font-size: 110%;
   font-weight: bold;
   display: block;
-  color: rgb(43, 155, 70);
+  color: #4c50b4;
   padding: 0.2em 0 0.6em 0;
 }
 
