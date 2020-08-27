@@ -1,5 +1,6 @@
 import markdown
 from markdown.extensions import Extension
+from markdown.postprocessors import Postprocessor
 from markdown.inlinepatterns import Pattern
 from codecs import open
 import os
@@ -54,6 +55,8 @@ DEFAULT_CSS = """
 
 DEF_RE = r"(@\()(?P<text>.+?)\)"
 
+JAVASCRIPT = {}
+
 
 class DefinitionPattern(Pattern):
     def __init__(self, pattern, md=None, configs={}):
@@ -92,23 +95,42 @@ class DefinitionPattern(Pattern):
         else:
             elem = markdown.util.etree.Element("span")
 
-        elem.set("class", "tooltip")
+        id = "tooltip-{}".format(text.replace(" ", "-"))
 
-        # because overall content is with a <p>-tag it does not like <p> or <div>
-        # within the hover over box (for the moment just remove the preceeding and
-        # trailing <p>'s added my markdown processing.
-        content = markdown.markdown(definition).lstrip("<p>").rstrip("</p>").strip()
+        elem.set("id", id)
+        elem.text = text
 
-        # add a header within the tool tip
-        header = ""
-        if self.header:
-            header = '<em id="tooltipheader">"{}"</em>'.format(text)
-
-        inner = '{}<span class="tooltiptext">{}{}</span>'.format(text, header, content)
-        placeholder = self.md.htmlStash.store(inner)
-        elem.text = placeholder
+        content = markdown.markdown(definition)
+        if id not in JAVASCRIPT:
+            JAVASCRIPT[id] = content.replace("'", "&#39;").replace("\n", " ")
 
         return elem
+
+
+class DefinitionPostprocessor(Postprocessor):
+    def __init__(self, js):
+        self.js = js
+
+    def run(self, text):
+        # write out javascript to file
+
+        tippytemplate = \
+"""tippy('#{id}', {{
+    content: '{html}',
+    allowHTML: true,
+    interactive: true,
+}});
+"""
+
+        jsfile = self.js.getConfig("js_file")
+
+        with open(jsfile, "w") as fp:
+            for key in JAVASCRIPT:
+                fp.write(tippytemplate.format(**{"id": key, "html": JAVASCRIPT[key]}))
+                fp.write("\n")
+
+        # don't do anything to text
+        return text
 
 
 class MdTooltipLink(Extension):
@@ -123,7 +145,14 @@ class MdTooltipLink(Extension):
                 "Location to output default CSS style.",
             ],
             "css_custom": [None, "Custom CSS to place in path."],
+            "js_file": ["docs/javascripts/glossary.js", "Javascript path"]
         }
+
+        # in the mkdocs.yml file add:
+        # extra_javascript:
+        #   - https://unpkg.com/@popperjs/core@2
+        #   - https://unpkg.com/tippy.js@6
+        #   - value from js_file
 
         super().__init__(**kwargs)
 
@@ -142,10 +171,17 @@ class MdTooltipLink(Extension):
             except Exception as e:
                 raise RuntimeError("Problem copying CSS file: {}".format(e))
 
+        jspath, jsfile = os.path.split(self.getConfig("js_file"))
+        if not os.path.isdir(jspath):
+            os.makedirs(jspath)
+
     def extendMarkdown(self, md, md_globals):
         md.inlinePatterns["definition"] = DefinitionPattern(
-            DEF_RE, md, configs=self.getConfigs()
+            DEF_RE, md, configs=self.getConfigs(),
         )
+
+        # Insert a postprocessor
+        md.postprocessors.register(DefinitionPostprocessor(self), 'definition', 25)
 
 
 def makeExtension(**kwargs):
