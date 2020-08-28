@@ -4,54 +4,41 @@ from markdown.postprocessors import Postprocessor
 from markdown.inlinepatterns import Pattern
 from codecs import open
 import os
+import re
+import requests
 import shutil
+from urllib.parse import urlparse
 
 
 DEFAULT_CSS = """
-.tooltip {
-  border-bottom: 1px dotted #000000;
-  cursor: pointer;
-  position: relative;
-  display: inline-block;
-}
-
-.tooltip .tooltiptext{
-  visibility: hidden;
-  position: absolute;
-
-  border-radius: 0px 3px 3px 0px;
-  -moz-border-radius: 0px 3px 3px 0px;
-  -webkit-border-radius: 0px 3px 3px 0px;
-  box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.1);
-  -webkit-box-shadow: 2px 2px rgba(0, 0, 0, 0.1);
-  -moz-box-shadow: 2px 2px rgba(0, 0, 0, 0.1);
-
-  left: -1.5em;
-  top: 2.2em;
-  z-index: 1;
-  width: 350px;
-
-  font-size: 90%;
-  color: #666666;
-  background-color: #F7F7F7; 
-  border: 1px solid #F5F5F5;
-  border-left: 3px solid #4c50b4;
-  padding: 0.5em 0.8em 0.8em 0.8em;
-}
-
-#tooltipheader {
-  font-size: 110%;
+div.tooltip::before {
+  font-size: 130%;
   font-weight: bold;
   display: block;
   color: #4c50b4;
-  padding: 0.2em 0 0.6em 0;
+  content: attr(header);
+  border-bottom: 1px solid LightGray;
+  padding-bottom: 4px;
 }
 
-.tooltip:hover .tooltiptext {
-  visibility: visible;
+a.tooltiptext {
+  color: MidnightBlue;
+  font-weight: bold;
+}
+
+a.tooltiptext:hover {
+  color: MidnightBlue;
+  font-weight: bold;
+  text-shadow: 2px 2px 2px DarkGrey;
+}
+
+span.tooltiptext {
+  color: MidnightBlue;
+  font-weight: bold;
 }
 """
 
+TIPPY_THEME_URL = "https://unpkg.com/tippy.js@6/themes/{}.css"
 
 DEF_RE = r"(@\()(?P<text>.+?)\)"
 
@@ -62,17 +49,30 @@ class DefinitionPattern(Pattern):
     def __init__(self, pattern, md=None, configs={}):
         super().__init__(pattern, md=md)
 
+        # use DOTALL flag to allow multiline text (https://stackoverflow.com/q/63636926/1862861)
+        self.compiled_re = re.compile(r"^(.*?)%s(.*)$" % pattern, flags=re.DOTALL)
+
         self.glossary = configs.get("glossary_path")
         self.header = configs.get("header")
         self.link = configs.get("link")
+        self.plural = configs.get("allow_plural")
 
     def handleMatch(self, matched):
-        text = matched.group("text")
+        text = matched.group("text").replace("\n", " ")
 
         with open(self.glossary, "r") as r:
             lines = r.readlines()
 
         total = ""
+
+        # if term is plural try glossary for singular versions
+        textsingular = []
+        singulartext = ""
+        if text.lower()[-2:] == "es" and self.plural:
+            textsingular.append(text.lower()[:-2])
+        if text.lower()[-1] == "s" and self.plural:
+            textsingular.append(text.lower()[:-1])
+
         for i in range(len(lines)):
             if lines[i].lower().rstrip() == "## " + text.lower():
                 count = 1
@@ -82,6 +82,21 @@ class DefinitionPattern(Pattern):
                     if not res.isspace() and not res.startswith("##"):
                         total += res
                     count += 1
+            elif self.plural:
+                for ts in textsingular:
+                    if lines[i].lower().rstrip() == "## " + ts:
+                        singulartext = ts
+                        count = 1
+                        res = ""
+                        while not res.startswith("##") and i + count < len(lines):
+                            res = lines[i + count]
+                            if not res.isspace() and not res.startswith("##"):
+                                total += res
+                            count += 1
+                        break
+
+            if total:
+                break
 
         if not total:
             return
@@ -91,16 +106,34 @@ class DefinitionPattern(Pattern):
         if self.link:
             basename = os.path.basename(self.glossary).strip(".md")
             elem = markdown.util.etree.Element("a")
-            elem.set("href", "../{}/index.html#{}".format(basename, text))
+            linktext = text.lower() if len(singulartext) == 0 else singulartext
+            elem.set(
+                "href",
+                "../{}/index.html#{}".format(basename, linktext.replace(" ", "-")),
+            )
         else:
             elem = markdown.util.etree.Element("span")
 
-        id = "tooltip-{}".format(text.replace(" ", "-"))
+        id = (
+            "tooltip-{}".format(text.lower().replace(" ", "-"))
+            if len(singulartext) == 0
+            else "tooltip-{}".format(singulartext.replace(" ", "-"))
+        )
 
         elem.set("id", id)
         elem.text = text
 
+        elem.set("class", "tooltiptext")
+
         content = markdown.markdown(definition)
+
+        if self.header:
+            # wrap in div with header containing text
+            headertext = text if len(singulartext) == 0 else singulartext
+            content = '<div class="tooltip" header="{}">{}</div>'.format(
+                headertext, content
+            )
+
         if id not in JAVASCRIPT:
             JAVASCRIPT[id] = content.replace("'", "&#39;").replace("\n", " ")
 
@@ -114,19 +147,24 @@ class DefinitionPostprocessor(Postprocessor):
     def run(self, text):
         # write out javascript to file
 
-        tippytemplate = \
-"""tippy('#{id}', {{
+        tippytemplate = """tippy('#{id}', {{
     content: '{html}',
     allowHTML: true,
     interactive: true,
+    theme: '{theme}',
 }});
 """
 
         jsfile = self.js.getConfig("js_file")
+        theme = self.js.getConfig("theme", "light-border")
 
         with open(jsfile, "w") as fp:
             for key in JAVASCRIPT:
-                fp.write(tippytemplate.format(**{"id": key, "html": JAVASCRIPT[key]}))
+                fp.write(
+                    tippytemplate.format(
+                        **{"id": key, "html": JAVASCRIPT[key], "theme": theme}
+                    )
+                )
                 fp.write("\n")
 
         # don't do anything to text
@@ -140,12 +178,23 @@ class MdTooltipLink(Extension):
             "glossary_path": ["docs/glossary.md", "Default location for glossary."],
             "header": [True, "Add header containing the text in the tooltip."],
             "link": [True, "Add link to the glossary item."],
+            "allow_plural": [
+                True,
+                "Allow tags around plural versions of glossary items",
+            ],
             "css_path": [
                 "docs/css/tooltips.css",
                 "Location to output default CSS style.",
             ],
-            "css_custom": [None, "Custom CSS to place in path."],
-            "js_file": ["docs/javascripts/glossary.js", "Javascript path"]
+            "css_custom": [
+                None,
+                "Custom CSS to place in path (including tippy theme CSS).",
+            ],
+            "js_file": ["docs/javascripts/glossary.js", "Javascript path"],
+            "theme": [
+                "light-border",
+                "The tippy.js theme name, or a URL to the theme, or the theme definition CSS",
+            ],
         }
 
         # in the mkdocs.yml file add:
@@ -161,6 +210,24 @@ class MdTooltipLink(Extension):
             try:
                 with open(self.getConfig("css_path"), "w") as fp:
                     fp.write(DEFAULT_CSS)
+
+                    theme = self.getConfig("theme")
+
+                    if ".tippy-box[" in theme:
+                        # theme is CSS, so add to CSS file
+                        fp.write("\n" + theme + "\n")
+                    else:
+                        result = urlparse(theme)
+                        if all([result.scheme, result.netloc, result.path]):
+                            # have passed a URL
+                            themeurl = theme
+                        else:
+                            themeurl = TIPPY_THEME_URL.format(theme)
+
+                        req = requests.get(themeurl)
+                        if req.text:
+                            fp.write("\n" + req.text + "\n")
+
             except Exception as e:
                 raise IOError("Problem writing CSS file: {}".format(e))
         elif os.path.isfile(self.getConfig("css_custom")):
@@ -177,11 +244,11 @@ class MdTooltipLink(Extension):
 
     def extendMarkdown(self, md, md_globals):
         md.inlinePatterns["definition"] = DefinitionPattern(
-            DEF_RE, md, configs=self.getConfigs(),
+            DEF_RE, md, configs=self.getConfigs()
         )
 
         # Insert a postprocessor
-        md.postprocessors.register(DefinitionPostprocessor(self), 'definition', 25)
+        md.postprocessors.register(DefinitionPostprocessor(self), "definition", 25)
 
 
 def makeExtension(**kwargs):
