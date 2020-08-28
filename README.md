@@ -1,15 +1,16 @@
 # md-tooltips-link
 
-A simple Python markdown extension which will give you tooltips *and* links to definitions from a glossary. Works with `mkdocs` with `mkdocs-material`. This is extensively based on the [`md-tooltips`](https://github.com/lsaether/md-tooltips) extension by Logan Saether, but adds in the following:
+A simple Python markdown extension which will give you tooltips *and* links to definitions from a glossary. Works with `mkdocs` with `mkdocs-material`. This is extensively based on the [`md-tooltips`](https://github.com/lsaether/md-tooltips) extension by Logan Saether but adds in the following:
 
  * the ability to have the hover-over text link to the glossary
  * the ability to pass a glossary file with any path/name rather than just `docs/glossary.md`
- * automatically create a default CSS file
+ * automatically create a default CSS file for the tooltip
  * allow the user to supply a custom CSS file
+ * allow tags within the Markdown to be plurals of glossary items
 
-These tooltips just use CSS without any Javascript.
+To create the tooltips the Javascript [tippy](https://atomiks.github.io/tippyjs/) package is used.
 
-> Note: I should probably switch this over to using something like the Javascript [tippy](https://atomiks.github.io/tippyjs/) package. That would offer better control of the tooltip and allow full HTML within the tooltip. This will happen if/when I have the time...
+> Note: Version 0.1 just used CSS without any Javascript.
 
 ## How to use
 
@@ -50,6 +51,23 @@ In any of your markdown files in the `docs` directory, use the `@()` syntax to c
 An important term you should be familiar with is @(block).
 ```
 
+To use tippy you will need to add the javascript paths to the `extra_javascript` option in `mkdocs.yml`:
+
+```yaml
+extra_javascript:
+  - https://unpkg.com/@popperjs/core@2
+  - https://unpkg.com/tippy.js@6
+  - javascript/glossary.js
+```
+
+and use the `js_file` option for when defining `mdtooltipslink` options:
+
+```yaml
+markdown_extensions:
+  - mdtooltipslink:
+      js_file: docs/javascript/glossary.js
+```
+
 ### Customisation
 
 The following customisations are available:
@@ -84,7 +102,12 @@ markdown_extensions:
       css_path: cssfilepath
 ```
 
-`cssfilepath` sets where the default CSS file will be output to. This defaults to `docs/css/tooltips.css`.
+`cssfilepath` sets where the default CSS file will be output to. This defaults to `docs/css/tooltips.css`, which should also be included in the `extra_css` option (without the preceeding `docs`), e.g.,:
+
+```yaml
+extra_css:
+  - css/tooltips.css
+```
 
 ```yaml
 markdown_extensions:
