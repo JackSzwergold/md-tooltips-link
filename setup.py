@@ -8,5 +8,6 @@ setup(
     description="A Python markdown extension for implementing a glossary with tooltips",
     py_modules=["mdtooltipslink"],
     install_requires = ["markdown>=2.5"],
+    include_package_data=True,
     url="https://github.com/mattpitkin/md-tooltips-link",
 )
