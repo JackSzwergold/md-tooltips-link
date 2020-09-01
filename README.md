@@ -117,6 +117,8 @@ markdown_extensions:
 
 `csscustomfilepath` allows you to pass your own CSS file, which will be copied to the location given by the `css_path` option. This defaults to `None`.
 
+> Note: At the moment the Javascript file that this extension creates does not get copied into the `site` directory created by `mkdocs` unless it already exists. Therefore you have to manually copy it over - I'll try and fix this in the future.
+
 ## License
 
 Public domain.
