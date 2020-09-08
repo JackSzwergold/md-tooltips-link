@@ -23,18 +23,21 @@ div.tooltip::before {
 
 a.tooltiptext {
   color: MidnightBlue;
-  font-weight: bold;
+  font-weight: 500;
+  border-bottom: 1px dotted black;
 }
 
 a.tooltiptext:hover {
   color: MidnightBlue;
-  font-weight: bold;
+  font-weight: 500;
   text-shadow: 2px 2px 2px DarkGrey;
+  border-bottom: 1px dotted black;
 }
 
 span.tooltiptext {
   color: MidnightBlue;
-  font-weight: bold;
+  font-weight: 500;
+  border-bottom: 1px dotted black;
 }
 """
 
