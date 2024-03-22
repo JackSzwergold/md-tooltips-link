@@ -246,8 +246,12 @@ class MdTooltipLink(Extension):
             os.makedirs(jspath)
 
     def extendMarkdown(self, md):
-        md.inlinePatterns["definition"] = DefinitionPattern(
-            DEF_RE, md, configs=self.getConfigs()
+        md.inlinePatterns.register(
+            DefinitionPattern(
+                DEF_RE, md, configs=self.getConfigs()
+            ),
+            "definition",
+            25,
         )
 
         # Insert a postprocessor
@@ -256,3 +260,4 @@ class MdTooltipLink(Extension):
 
 def makeExtension(**kwargs):
     return MdTooltipLink(**kwargs)
+
