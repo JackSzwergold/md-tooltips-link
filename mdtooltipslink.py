@@ -245,7 +245,7 @@ class MdTooltipLink(Extension):
         if not os.path.isdir(jspath):
             os.makedirs(jspath)
 
-    def extendMarkdown(self, md, md_globals):
+    def extendMarkdown(self, md):
         md.inlinePatterns["definition"] = DefinitionPattern(
             DEF_RE, md, configs=self.getConfigs()
         )
