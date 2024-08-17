@@ -112,7 +112,7 @@ class DefinitionPattern(Pattern):
             linktext = text.lower() if len(singulartext) == 0 else singulartext
             elem.set(
                 "href",
-                "../{}/index.html#{}".format(basename, linktext.replace(" ", "-")),
+                "/{}/#{}".format(basename, linktext.replace(" ", "-")),
             )
         else:
             elem = markdown.util.etree.Element("span")
